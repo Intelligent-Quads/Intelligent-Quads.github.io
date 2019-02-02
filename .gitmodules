@@ -1,0 +1,6 @@
+[submodule "docs"]
+	path = docs
+	url = git@github.com:Texas-Aerial-Robotics/docs.git
+[submodule "m.css"]
+	path = m.css
+	url = git@github.com:Intelligent-Quads/m.css.git
