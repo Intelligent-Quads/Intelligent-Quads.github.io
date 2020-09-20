@@ -1,0 +1,21 @@
+h3 {
+    text-align: center;
+}
+.sim-container {
+    margin: auto;
+    /* border: 3px solid green; */
+    padding: 10px;
+    /* float: center; */
+}
+canvas {
+    width : 100%;
+    padding-left: 0;
+    padding-right: 0;
+    /* padding-top: 100%; */
+    margin-left: auto;
+    margin-right: 0;
+    display: block;
+}
+input[type="number"] {
+    font-size: small;
+}

@@ -1,7 +1,0 @@
-
-[submodule "m.css"]
-	path = m.css
-	url = https://github.com/Intelligent-Quads/m.css.git
-[submodule "docs"]
-	path = docs
-	url = https://github.com/Texas-Aerial-Robotics/docs.git
