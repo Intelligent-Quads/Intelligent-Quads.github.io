@@ -301,6 +301,12 @@ function updateLoopsEnabled() {
 function initDefaults() {
     document.getElementById("stepAmp").value = 5000;
     document.getElementById("stepLength").value = 20;
+
+    document.getElementById("desiredRate").value = desired.desiredRate;
+    document.getElementById("desiredAtt").value = desired.desiredAtt;
+    document.getElementById("desiredVel").value = desired.desiredVel;
+    document.getElementById("desiredPos").value = desired.desiredPos;
+
     enableRate(false);
     enableAtt(false);
     enableVel(false);
