@@ -11,8 +11,8 @@ var csv = document.getElementById('canvas');
 var ctx = csv.getContext('2d');
 console.log(csv.width)
 
-var rateGains = { p: 0, i: 0, d: 0 };
-var attGains = { p: 0, i: 0, d: 0 };
+var rateGains = { p: 600, i: 10, d: 10 };
+var attGains = { p: 100, i: 0, d: 0 };
 
 
 var timeStep = 5; //ms
@@ -85,7 +85,7 @@ function attitudeLoop() {
     currentError = desired.desiredAtt - droneState.theta;
     attError.dErr = (currentError - attError.pErr) / (timeStep / 1000);
     attError.pErr = currentError;
-    attError.iErr = currentError + attError.iErr;
+    attError.iErr = clamping(100, currentError + attError.iErr);
     // console.log(attError)
 
     output = attGains.p * attError.pErr + attGains.i * attError.iErr + attGains.d * attError.dErr;
@@ -299,6 +299,14 @@ function updateLoopsEnabled() {
 }
 
 function initDefaults() {
+    document.getElementById("ratePGain").value = rateGains.p;
+    document.getElementById("rateIGain").value = rateGains.i;
+    document.getElementById("rateDGain").value = rateGains.d;
+
+    document.getElementById("attPGain").value = attGains.p;
+    document.getElementById("attIGain").value = attGains.i;
+    document.getElementById("attDGain").value = attGains.d;
+
     document.getElementById("stepAmp").value = 5000;
     document.getElementById("stepLength").value = 20;
 
