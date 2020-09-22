@@ -11,8 +11,10 @@ var csv = document.getElementById('canvas');
 var ctx = csv.getContext('2d');
 console.log(csv.width)
 
-var rateGains = { p: 600, i: 10, d: 10 };
-var attGains = { p: 100, i: 0, d: 0 };
+var rateGains = { p: 60, i: 1, d: 1 };
+var attGains = { p: 5, i: 0, d: 0 };
+var velGains = { p: 0, i: 0, d: 0 };
+var posGains = { p: 0, i: 0, d: 0 };
 
 
 var timeStep = 5; //ms
@@ -32,15 +34,34 @@ droneState = {
     alpha: 0,
     omega: 200,
     theta: 0,
+    acceleration: 0,
     velocity: 0,
     position: 0
 }
 
+motor = {
+    minRPM: 0,
+    maxRPM: 5000,
+    power2rpm: 4,
+    rpm2force: 2
+}
+
 drone = {
-    mass: 1, //kg 
-    inertia: 100, // kg-m^2
-    armLength: .3, //m
-    torqueStrength: 3
+    mass: 10, //kg 
+    inertia: 5, // kg-m^2
+    armLength: 1, //m
+    motorStrength: 3, //N
+    hoverRPM: 200
+}
+posError = {
+    pErr: 0,
+    iErr: 0,
+    dErr: 0
+}
+velError = {
+    pErr: 0,
+    iErr: 0,
+    dErr: 0
 }
 attError = {
     pErr: 0,
@@ -52,11 +73,12 @@ rateError = {
     iErr: 0,
     dErr: 0
 }
+
 function updateDisplay() {
     document.getElementById("stateOmega").innerHTML = "Omega (deg/s): " + droneState.omega.toFixed(2).toString();
     document.getElementById("stateTheta").innerHTML = " Theta (deg): " + droneState.theta.toFixed(2).toString();
-    document.getElementById("stateVel").innerHTML = " Velocity (deg): " + droneState.velocity.toFixed(2).toString();
-    document.getElementById("statePos").innerHTML = " Position (deg): " + droneState.position.toFixed(2).toString();
+    document.getElementById("stateVel").innerHTML = " Velocity (m/s): " + droneState.velocity.toFixed(2).toString();
+    document.getElementById("statePos").innerHTML = " Position (m): " + droneState.position.toFixed(2).toString();
 }
 function clamping(max, value) {
     if (value > max) {
@@ -94,29 +116,68 @@ function attitudeLoop() {
 
     return output;
 }
+function velocityLoop() {
+    currentError = desired.desiredVel - droneState.velocity;
+    velError.dErr = (currentError - velError.pErr) / (timeStep / 1000);
+    velError.pErr = currentError;
+    velError.iErr = clamping(100, currentError + velError.iErr);
+
+    output = velGains.p * velError.pErr + velGains.i * velError.iErr + velGains.d * velError.dErr;
+    console.log("vel loop", output)
+    desired.desiredAtt = output;
+    output = attitudeLoop();
+    output = rateLoop();
+    console.log("rate loop", output)
+    return output;
+
+}
+function inRange(min, max, value) {
+    if (value > max) {
+        output = max;
+    } else if (value < min) {
+        output = min;
+    } else {
+        output = value;
+    }
+    return output;
+}
+
 
 function physics() {
     // calc control loops 
-
-    if (document.getElementById("attLoopChBx").checked) {
-        controlOutput = attitudeLoop();
+    if (document.getElementById("velLoopChBx").checked) {
+        controlOutput = velocityLoop();
     } else {
-        if (document.getElementById("rateLoopChBx").checked) {
-            controlOutput = rateLoop()
+        if (document.getElementById("attLoopChBx").checked) {
+            controlOutput = attitudeLoop();
         } else {
-            console.log("no control loop active")
-            controlOutput = 0;
+            if (document.getElementById("rateLoopChBx").checked) {
+                controlOutput = rateLoop()
+            } else {
+                console.log("no control loop active")
+                controlOutput = 0;
+            }
         }
     }
 
+    // console.log("control output", controlOutput)
 
+    // calc Forces 
+    var motorForce1 = inRange(motor.minRPM, motor.maxRPM, drone.hoverRPM - (motor.rpm2force * controlOutput));
+    var motorForce2 = inRange(motor.minRPM, motor.maxRPM, drone.hoverRPM + (motor.rpm2force * controlOutput));
+    var motorForce = motorForce1 + motorForce2;
+    var motorTorque = motorForce2 * drone.armLength - motorForce1 * drone.armLength;
 
-    // calc torque
-    droneState.alpha = ((drone.torqueStrength * controlOutput) + disturbance.stepAmp * 5) / drone.inertia;
+    droneState.alpha = (motorTorque + disturbance.stepAmp) / drone.inertia;
 
     droneState.omega = droneState.alpha * (timeStep / 1000) + droneState.omega;
 
     droneState.theta = (((droneState.omega * (timeStep / 1000) + droneState.theta) + 180) % 360) - 180;
+
+    droneState.alpha = motorForce * Math.sin(droneState.theta) / drone.mass;
+
+    droneState.velocity = droneState.alpha * (timeStep / 1000) + droneState.velocity
+    // droneState.acceleration =
     // console.log(droneState.theta)
 
 }
@@ -179,6 +240,44 @@ function updateGains() {
         attGains.d = parseFloat(document.getElementById("attDGain").value);
     }
 
+    //VELOCITY LOOP
+    if (isNaN(parseFloat(document.getElementById("velPGain").value))) {
+        velGains.p = 0;
+    } else {
+        velGains.p = parseFloat(document.getElementById("velPGain").value);
+    }
+
+    if (isNaN(parseFloat(document.getElementById("velIGain").value))) {
+        velGains.i = 0;
+    } else {
+        velGains.i = parseFloat(document.getElementById("velIGain").value);
+    }
+
+    if (isNaN(parseFloat(document.getElementById("velDGain").value))) {
+        velGains.d = 0;
+    } else {
+        velGains.d = parseFloat(document.getElementById("velDGain").value);
+    }
+
+    //POSITION LOOP
+    if (isNaN(parseFloat(document.getElementById("posPGain").value))) {
+        posGains.p = 0;
+    } else {
+        posGains.p = parseFloat(document.getElementById("posPGain").value);
+    }
+
+    if (isNaN(parseFloat(document.getElementById("posIGain").value))) {
+        posGains.i = 0;
+    } else {
+        posGains.i = parseFloat(document.getElementById("posIGain").value);
+    }
+
+    if (isNaN(parseFloat(document.getElementById("posDGain").value))) {
+        posGains.d = 0;
+    } else {
+        posGains.d = parseFloat(document.getElementById("posDGain").value);
+    }
+
     console.log(rateGains)
     console.log(attGains)
     return false;
@@ -209,7 +308,7 @@ function updateDesired() {
         desired.desiredPos = parseFloat(document.getElementById("desiredPos").value);
     }
 
-    console.log(rateGains)
+    console.log(desired)
     return false;
 }
 function updateDisturbance() {
@@ -270,31 +369,48 @@ function enableVel(enableDisable) {
     document.getElementById("velIGain").disabled = !enableDisable;
     document.getElementById("velDGain").disabled = !enableDisable;
     document.getElementById("velLoopChBx").checked = enableDisable;
+
+    document.getElementById("desiredRate").disabled = enableDisable;
+    document.getElementById("desiredAtt").disabled = enableDisable;
+    document.getElementById("desiredVel").disabled = !enableDisable;
+    document.getElementById("desiredPos").disabled = enableDisable;
 }
+
 function enablePos(enableDisable) {
     document.getElementById("posPGain").disabled = !enableDisable;
     document.getElementById("posIGain").disabled = !enableDisable;
     document.getElementById("posDGain").disabled = !enableDisable;
     document.getElementById("posLoopChBx").checked = enableDisable;
+
+    document.getElementById("desiredRate").disabled = enableDisable;
+    document.getElementById("desiredAtt").disabled = enableDisable;
+    document.getElementById("desiredVel").disabled = enableDisable;
+    document.getElementById("desiredPos").disabled = !enableDisable;
 }
 
 function updateLoopsEnabled() {
-
-    if (document.getElementById("attLoopChBx").checked) {
+    if (document.getElementById("velLoopChBx").checked) {
         enableRate(true);
         enableAtt(true);
+        enableVel(true);
     } else {
-        enableAtt(false);
-        if (document.getElementById("rateLoopChBx").checked) {
+        if (document.getElementById("attLoopChBx").checked) {
             enableRate(true);
+            enableAtt(true);
         } else {
-            enableRate(false);
             enableAtt(false);
-            disableDesiredInput();
-            // enableVel(false);
-            // enablePos(false);
+            if (document.getElementById("rateLoopChBx").checked) {
+                enableRate(true);
+            } else {
+                enableRate(false);
+                enableAtt(false);
+                disableDesiredInput();
+                // enableVel(false);
+                // enablePos(false);
+            }
         }
     }
+
 
 }
 
