@@ -74,6 +74,31 @@ rateError = {
     dErr: 0
 }
 
+// Specify the left and right ranges
+var leftRange = [0, 100];
+var rightRange = [-100, 100];
+
+var lineChartData = [
+    // First series
+    {
+        label: "Series 1",
+        values: [{ time: 0, y: 1 }],
+        range: rightRange
+    }
+
+
+    // // The second series
+    // {
+    //     label: "Series 2",
+    //     values: [{ time: 1370044800, y: 78 }, { time: 1370044801, y: 98 }]
+    // },
+
+];
+var graph = $('#lineChart').epoch({
+    type: 'time.line',
+    data: lineChartData
+});
+
 function updateDisplay() {
     document.getElementById("stateOmega").innerHTML = "Omega (deg/s): " + droneState.omega.toFixed(2).toString();
     document.getElementById("stateTheta").innerHTML = " Theta (deg): " + droneState.theta.toFixed(2).toString();
@@ -191,6 +216,7 @@ function drawDrone(ctx, img, x, y, angle) {
     ctx.rotate(-(Math.PI / 180) * angle);
     ctx.translate(-x, -y);
 }
+var time_stamp = 0;
 function animate(image) {
     canvasWidth = csv.width;
     canvasHeight = csv.height;
@@ -198,6 +224,9 @@ function animate(image) {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawDrone(ctx, image, canvasHeight / 2, canvasWidth / 2, droneState.theta);
     updateDisplay();
+    time_stamp = time_stamp + 1;
+    graph.push([{ time: time_stamp, y: droneState.theta }]);
+
 }
 
 function updateGains() {
@@ -438,7 +467,27 @@ function initDefaults() {
     disableDesiredInput();
 }
 
+
+
+
+
+// var trace1 = {
+//     x: [1, 2, 3, 4],
+//     y: [10, 15, 13, 17],
+//     type: 'scatter'
+//   };
+
+//   var trace2 = {
+//     x: [1, 2, 3, 4],
+//     y: [16, 5, 11, 9],
+//     type: 'scatter'
+//   };
+
+//   var data = [trace1, trace2];
+
+//   Plotly.newPlot('plotDiv', data);
+
 initDefaults();
 setInterval(() => {
     animate(droneImage);
-}, timeStep);
+}, timeStep)

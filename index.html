@@ -9,6 +9,13 @@
   <!-- CSS only -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
     integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+
+  <script src="https://d3js.org/d3.v3.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epoch-charting@0.8.4/dist/js/epoch.min.js"></script>
+
 </head>
 
 <body>
@@ -206,11 +213,14 @@
   </div>
   <div class="container">
     <div class="row">
-      <div class="col-sm-9">
+      <div class="col-sm-3">
         <h5 id="stateOmega"></h5>
         <h5 id="stateTheta"></h5>
         <h5 id="stateVel"></h5>
         <h5 id="statePos"></h5>
+      </div>
+      <div class="col-sm-6 ">
+        <div id="plotDiv"></div>
       </div>
       <div class="col-sm-3">
         <!-- <canvas id="canvas" width="500" height="500" style="background : black;"></canvas> -->
@@ -218,7 +228,11 @@
       </div>
 
     </div>
-
+  </div>
+  <div class="container">
+    <div class="row">
+      <div id="lineChart" style="width: 800px; height: 200px"></div>
+    </div>
   </div>
   <footer class="footer mt-auto py-3">
     <div class="container">
