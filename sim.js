@@ -13,11 +13,12 @@ console.log(csv.width)
 
 var rateGains = { p: 60, i: 1, d: 1 };
 var attGains = { p: 5, i: 0, d: 0 };
-var velGains = { p: 0, i: 0, d: 0 };
+var velGains = { p: 0.1, i: 0, d: 0 };
 var posGains = { p: 0, i: 0, d: 0 };
 
+var angle_param = 45;
 
-var timeStep = 5; //ms
+var timeStep = 10; //ms
 disturbance = {
     stepLength: 0,
     stepAmp: 0
@@ -104,7 +105,24 @@ function rateLoop() {
     return output;
 }
 function attitudeLoop() {
+
+    // apply angle limits
+    if (desired.desiredAtt > angle_param)
+        desired.desiredAtt = angle_param;
+    else if (desired.desiredAtt < -angle_param)
+        desired.desiredAtt = -angle_param;
+    else
+        desired.desiredAtt = desired.desiredAtt;
+
+    // apply angle control loop in quickest direction and handle discontinuity
     currentError = desired.desiredAtt - droneState.theta;
+    if (currentError > 180)
+        currentError = currentError - 360;
+    else if (currentError < -180)
+        currentError = currentError + 360;
+    else
+        currentError = currentError;//do nothing
+
     attError.dErr = (currentError - attError.pErr) / (timeStep / 1000);
     attError.pErr = currentError;
     attError.iErr = clamping(100, currentError + attError.iErr);
@@ -127,7 +145,7 @@ function velocityLoop() {
     desired.desiredAtt = output;
     output = attitudeLoop();
     output = rateLoop();
-    console.log("rate loop", output)
+    // console.log("rate loop", output)
     return output;
 
 }
@@ -422,6 +440,10 @@ function initDefaults() {
     document.getElementById("attPGain").value = attGains.p;
     document.getElementById("attIGain").value = attGains.i;
     document.getElementById("attDGain").value = attGains.d;
+
+    document.getElementById("velPGain").value = velGains.p;
+    document.getElementById("velIGain").value = velGains.i;
+    document.getElementById("velDGain").value = velGains.d;
 
     document.getElementById("stepAmp").value = 5000;
     document.getElementById("stepLength").value = 20;
