@@ -350,6 +350,33 @@ function updateDisturbance() {
     // console.log(disturbance)  
     return false;
 }
+function updateDrone() {
+    console.log("updating drone");
+    if (isNaN(parseFloat(document.getElementById("mass").value))) {
+        document.getElementById("mass").value = drone.mass;
+    } else {
+        drone.mass = document.getElementById("mass").value
+    }
+    if (isNaN(parseFloat(document.getElementById("armLength").value))) {
+        document.getElementById("armLength").value = drone.armLength;
+    } else {
+        drone.armLength = document.getElementById("armLength").value
+    }
+    if (isNaN(parseFloat(document.getElementById("inertiaDist").value))) {
+        document.getElementById("inertiaDist").value = 0.5;
+    } else {
+        dist = document.getElementById("inertiaDist").value;
+        //weighted moment of inertia about Iz of cuboid
+        //lower dist -> drone is closer to point mass
+        drone.inertia = (1 / 12) * drone.mass * ((.1) ^ 2 + (2 * drone.armLength * dist) ^ 2)
+    }
+    if (isNaN(parseFloat(document.getElementById("motStrength").value))) {
+        document.getElementById("motStrength").value = motor.rpm2force;
+    } else {
+        motor.rpm2force = document.getElementById("motStrength").value
+    }
+    return false;
+}
 
 function disableDesiredInput() {
     document.getElementById("desiredRate").disabled = true;
@@ -452,6 +479,11 @@ function initDefaults() {
     document.getElementById("desiredAtt").value = desired.desiredAtt;
     document.getElementById("desiredVel").value = desired.desiredVel;
     document.getElementById("desiredPos").value = desired.desiredPos;
+
+    document.getElementById("mass").value = drone.mass;
+    document.getElementById("armLength").value = drone.armLength;
+    document.getElementById("inertiaDist").value = .5;
+    document.getElementById("motStrength").value = motor.rpm2force;
 
     enableRate(false);
     enableAtt(false);

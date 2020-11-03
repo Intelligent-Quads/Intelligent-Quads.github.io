@@ -134,7 +134,7 @@
     </div>
 
     <div class="row">
-      <div class="card input-group col-sm-2">
+      <div class="card input-group col-sm-3">
         <div class="card-body">
           <h5 class="card-title">Loops</h5>
           <div class="custom-control custom-checkbox">
@@ -155,7 +155,7 @@
           </div>
         </div>
       </div>
-      <div class="card col-sm-5">
+      <div class="card col-sm-3">
         <div class="card-body">
           <form onsubmit="return updateDisturbance();">
             <h5 class="card-title">Disturbance</h5>
@@ -175,7 +175,7 @@
         </div>
 
       </div>
-      <div class="card col-sm-5">
+      <div class="card col-sm-3">
         <div class="card-body">
           <form onsubmit="return updateDesired();">
             <h5 class="card-title">Desired Output</h5>
@@ -194,6 +194,30 @@
             <div class="row">
               <label class="col-sm-8">Desired Position (m)</label>
               <input class="col-sm-4" id="desiredPos" type="number" step="0.0001">
+            </div>
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+      </div>
+      <div class="card col-sm-3">
+        <div class="card-body">
+          <form onsubmit="return updateDrone();">
+            <h5 class="card-title">Quad</h5>
+            <div class="row">
+              <label class="col-sm-8">Mass (kg)</label>
+              <input class="col-sm-4" id="mass" type="number" step="0.1">
+            </div>
+            <div class="row">
+              <label class="col-sm-8">Arm Length (m)</label>
+              <input class="col-sm-4" id="armLength" type="number" step="0.01">
+            </div>
+            <div class="row">
+              <label class="col-sm-8">Inertia Distribution</label>
+              <input class="col-sm-4" id="inertiaDist" type="number" step="0.01">
+            </div>
+            <div class="row">
+              <label class="col-sm-8">Motor Strength (N/RPM)</label>
+              <input class="col-sm-4" id="motStrength" type="number" step="0.001">
             </div>
             <button type="submit">Submit</button>
           </form>
