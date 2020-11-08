@@ -11,10 +11,10 @@ var csv = document.getElementById('canvas');
 var ctx = csv.getContext('2d');
 console.log(csv.width)
 
-var rateGains = { p: 60, i: 1, d: 1 };
-var attGains = { p: 5, i: 0, d: 0 };
-var velGains = { p: 1, i: 0, d: 0 };
-var posGains = { p: 1, i: 0, d: 0 };
+var rateGains = { p: 60, i: 1, iClamp: 100, d: 1 };
+var attGains = { p: 5, i: 0, iClamp: 100, d: 0 };
+var velGains = { p: 1, i: 0, iClamp: 100, d: 0 };
+var posGains = { p: 1, i: 0, iClamp: 100, d: 0 };
 
 var angle_param = 45; // deg
 var speed_param = 5; // m/s
@@ -25,8 +25,8 @@ disturbance = {
     stepAmp: 0 // N-m
 }
 disturbanceIC = {
-    stepLength: 100, // ms
-    stepAmp: 20 // N-m
+    stepLength: 50, // ms
+    stepAmp: 40 // N-m
 }
 
 desired = {
@@ -103,7 +103,7 @@ function rateLoop() {
     currentError = desired.desiredRate - droneState.omega;
     rateError.dErr = (currentError - rateError.pErr) / (timeStep / 1000);
     rateError.pErr = currentError;
-    rateError.iErr = clamping(100, currentError + rateError.iErr);
+    rateError.iErr = clamping(rateGains.iClamp, currentError + rateError.iErr);
     // console.log(rateError)
 
     output = rateGains.p * rateError.pErr + rateGains.i * rateError.iErr + rateGains.d * rateError.dErr;
@@ -120,7 +120,6 @@ function attitudeLoop() {
     else
         desired.desiredAtt = desired.desiredAtt;
 
-    console.log("desired att", desired.desiredAtt)
     // apply angle control loop in quickest direction and handle discontinuity
     currentError = desired.desiredAtt - droneState.theta;
     if (currentError > 180)
@@ -132,7 +131,7 @@ function attitudeLoop() {
 
     attError.dErr = (currentError - attError.pErr) / (timeStep / 1000);
     attError.pErr = currentError;
-    attError.iErr = clamping(100, currentError + attError.iErr);
+    attError.iErr = clamping(attGains.iClamp, currentError + attError.iErr);
     // console.log(attError)
 
     output = attGains.p * attError.pErr + attGains.i * attError.iErr + attGains.d * attError.dErr;
@@ -153,7 +152,7 @@ function velocityLoop() {
     currentError = desired.desiredVel - droneState.velocity;
     velError.dErr = (currentError - velError.pErr) / (timeStep / 1000);
     velError.pErr = currentError;
-    velError.iErr = clamping(100, currentError + velError.iErr);
+    velError.iErr = clamping(velGains.iClamp, currentError + velError.iErr);
 
     output = velGains.p * velError.pErr + velGains.i * velError.iErr + velGains.d * velError.dErr;
     // console.log("vel loop", output)
@@ -167,10 +166,10 @@ function positionLoop() {
     currentError = desired.desiredPos - droneState.position;
     posError.dErr = (currentError - posError.pErr) / (timeStep / 1000);
     posError.pErr = currentError;
-    posError.iErr = clamping(100, currentError + posError.iErr);
+    posError.iErr = clamping(posGains.iClamp, currentError + posError.iErr);
 
     output = posGains.p * posError.pErr + posGains.i * posError.iErr + posGains.d * posError.dErr;
-    console.log("pos loop", output)
+    // console.log("pos loop", output)
     desired.desiredVel = output;
     output = velocityLoop();
     return output;
@@ -218,9 +217,12 @@ function physics() {
     var motorForce = motorForce1 + motorForce2;
     var motorTorque = motorForce2 * drone.armLength - motorForce1 * drone.armLength;
 
-    var rho = 101;
-    // var dargForce = .5 * rho * (droneState.velocity ^ 2) * 1.1 * 1;
-    var dargForce = 0;
+    var rho = 1.225; // kg/m^3
+    var dargDir = 1;
+    if (droneState.velocity < 0) {
+        dargDir = -1;
+    }
+    var dargForce = .5 * rho * (droneState.velocity ^ 2) * 0.6 * .1 * dargDir;
 
     droneState.alpha = (motorTorque + disturbance.stepAmp) / drone.inertia;
 
@@ -233,7 +235,8 @@ function physics() {
     droneState.velocity = droneState.acceleration * (timeStep / 1000) + droneState.velocity;
 
     droneState.position = droneState.velocity * (timeStep / 1000) + droneState.position;
-    console.log("motor force", motorForce);
+    // console.log("motor force", motorForce);
+    // console.log("drag force", dargForce);
 
 }
 
@@ -268,7 +271,11 @@ function updateGains() {
     } else {
         rateGains.i = parseFloat(document.getElementById("rateIGain").value);
     }
-
+    if (isNaN(parseFloat(document.getElementById("rateMaxI").value))) {
+        rateGains.iClamp = 0;
+    } else {
+        rateGains.iClamp = parseFloat(document.getElementById("rateMaxI").value);
+    }
     if (isNaN(parseFloat(document.getElementById("rateDGain").value))) {
         rateGains.d = 0;
     } else {
@@ -282,17 +289,25 @@ function updateGains() {
     } else {
         attGains.p = parseFloat(document.getElementById("attPGain").value);
     }
-
     if (isNaN(parseFloat(document.getElementById("attIGain").value))) {
         attGains.i = 0;
     } else {
         attGains.i = parseFloat(document.getElementById("attIGain").value);
     }
-
+    if (isNaN(parseFloat(document.getElementById("attMaxI").value))) {
+        attGains.iClamp = 0;
+    } else {
+        attGains.iClamp = parseFloat(document.getElementById("attMaxI").value);
+    }
     if (isNaN(parseFloat(document.getElementById("attDGain").value))) {
         attGains.d = 0;
     } else {
         attGains.d = parseFloat(document.getElementById("attDGain").value);
+    }
+    if (isNaN(parseFloat(document.getElementById("maxAngle").value))) {
+        angle_param = 0;
+    } else {
+        angle_param = parseFloat(document.getElementById("maxAngle").value);
     }
 
     //VELOCITY LOOP
@@ -307,11 +322,20 @@ function updateGains() {
     } else {
         velGains.i = parseFloat(document.getElementById("velIGain").value);
     }
-
+    if (isNaN(parseFloat(document.getElementById("velMaxI").value))) {
+        velGains.iClamp = 0;
+    } else {
+        velGains.iClamp = parseFloat(document.getElementById("velMaxI").value);
+    }
     if (isNaN(parseFloat(document.getElementById("velDGain").value))) {
         velGains.d = 0;
     } else {
         velGains.d = parseFloat(document.getElementById("velDGain").value);
+    }
+    if (isNaN(parseFloat(document.getElementById("maxSpeed").value))) {
+        speed_param = 0;
+    } else {
+        speed_param = parseFloat(document.getElementById("maxSpeed").value);
     }
 
     //POSITION LOOP
@@ -320,13 +344,16 @@ function updateGains() {
     } else {
         posGains.p = parseFloat(document.getElementById("posPGain").value);
     }
-
     if (isNaN(parseFloat(document.getElementById("posIGain").value))) {
         posGains.i = 0;
     } else {
         posGains.i = parseFloat(document.getElementById("posIGain").value);
     }
-
+    if (isNaN(parseFloat(document.getElementById("posMaxI").value))) {
+        posGains.iClamp = 0;
+    } else {
+        posGains.iClamp = parseFloat(document.getElementById("posMaxI").value);
+    }
     if (isNaN(parseFloat(document.getElementById("posDGain").value))) {
         posGains.d = 0;
     } else {
@@ -408,9 +435,9 @@ function updateDrone() {
         drone.inertia = (1 / 12) * drone.mass * ((.1) ^ 2 + (2 * drone.armLength * dist) ^ 2)
     }
     if (isNaN(parseFloat(document.getElementById("motStrength").value))) {
-        document.getElementById("motStrength").value = motor.rpm2force;
+        document.getElementById("motStrength").value = motor.rpm2force * 1000;
     } else {
-        motor.rpm2force = document.getElementById("motStrength").value
+        motor.rpm2force = document.getElementById("motStrength").value / 1000;
     }
     return false;
 }
@@ -425,6 +452,7 @@ function disableDesiredInput() {
 function enableRate(enableDisable) {
     document.getElementById("ratePGain").disabled = !enableDisable;
     document.getElementById("rateIGain").disabled = !enableDisable;
+    document.getElementById("rateMaxI").disabled = !enableDisable;
     document.getElementById("rateDGain").disabled = !enableDisable;
     document.getElementById("desiredRate").disabled = !enableDisable;
     document.getElementById("rateLoopChBx").checked = enableDisable;
@@ -438,7 +466,9 @@ function enableRate(enableDisable) {
 function enableAtt(enableDisable) {
     document.getElementById("attPGain").disabled = !enableDisable;
     document.getElementById("attIGain").disabled = !enableDisable;
+    document.getElementById("attMaxI").disabled = !enableDisable;
     document.getElementById("attDGain").disabled = !enableDisable;
+    document.getElementById("maxAngle").disabled = !enableDisable;
     document.getElementById("attLoopChBx").checked = enableDisable;
 
     document.getElementById("desiredRate").disabled = enableDisable;
@@ -449,7 +479,9 @@ function enableAtt(enableDisable) {
 function enableVel(enableDisable) {
     document.getElementById("velPGain").disabled = !enableDisable;
     document.getElementById("velIGain").disabled = !enableDisable;
+    document.getElementById("velMaxI").disabled = !enableDisable;
     document.getElementById("velDGain").disabled = !enableDisable;
+    document.getElementById("maxSpeed").disabled = !enableDisable;
     document.getElementById("velLoopChBx").checked = enableDisable;
 
     document.getElementById("desiredRate").disabled = enableDisable;
@@ -461,6 +493,7 @@ function enableVel(enableDisable) {
 function enablePos(enableDisable) {
     document.getElementById("posPGain").disabled = !enableDisable;
     document.getElementById("posIGain").disabled = !enableDisable;
+    document.getElementById("posMaxI").disabled = !enableDisable;
     document.getElementById("posDGain").disabled = !enableDisable;
     document.getElementById("posLoopChBx").checked = enableDisable;
 
@@ -504,22 +537,28 @@ function updateLoopsEnabled() {
 function initDefaults() {
     document.getElementById("ratePGain").value = rateGains.p;
     document.getElementById("rateIGain").value = rateGains.i;
+    document.getElementById("rateMaxI").value = rateGains.iClamp;
     document.getElementById("rateDGain").value = rateGains.d;
 
     document.getElementById("attPGain").value = attGains.p;
     document.getElementById("attIGain").value = attGains.i;
+    document.getElementById("attMaxI").value = attGains.iClamp;
     document.getElementById("attDGain").value = attGains.d;
+    document.getElementById("maxAngle").value = angle_param;
 
     document.getElementById("velPGain").value = velGains.p;
     document.getElementById("velIGain").value = velGains.i;
+    document.getElementById("velMaxI").value = velGains.iClamp;
     document.getElementById("velDGain").value = velGains.d;
+    document.getElementById("maxSpeed").value = speed_param;
 
     document.getElementById("posPGain").value = posGains.p;
     document.getElementById("posIGain").value = posGains.i;
+    document.getElementById("posMaxI").value = posGains.iClamp;
     document.getElementById("posDGain").value = posGains.d;
 
-    document.getElementById("stepAmp").value = disturbanceIC.stepLength;
-    document.getElementById("stepLength").value = disturbanceIC.stepAmp;
+    document.getElementById("stepAmp").value = disturbanceIC.stepAmp;
+    document.getElementById("stepLength").value = disturbanceIC.stepLength;
 
     document.getElementById("desiredRate").value = desired.desiredRate;
     document.getElementById("desiredAtt").value = desired.desiredAtt;
@@ -529,7 +568,7 @@ function initDefaults() {
     document.getElementById("mass").value = drone.mass;
     document.getElementById("armLength").value = drone.armLength;
     document.getElementById("inertiaDist").value = .5;
-    document.getElementById("motStrength").value = motor.rpm2force;
+    document.getElementById("motStrength").value = motor.rpm2force * 1000;
 
     enableRate(false);
     enableAtt(false);

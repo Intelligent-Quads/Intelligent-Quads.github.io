@@ -48,6 +48,11 @@
                 <label class="col-sm-8">I Gain: </label>
                 <input class="col-sm-4" id="posIGain" type="number" step="0.001">
               </div>
+              <div class="row">
+                <div class="col-sm-2"></div>
+                <label class="col-sm-6">I Clamping: </label>
+                <input class="col-sm-4" id="posMaxI" type="number" step="1">
+              </div>
 
               <div class="row">
                 <label class="col-sm-8">D Gain: </label>
@@ -72,10 +77,20 @@
                 <label class="col-sm-8">I Gain: </label>
                 <input class="col-sm-4" id="velIGain" type="number" step="0.0001">
               </div>
+              <div class="row">
+                <div class="col-sm-2"></div>
+                <label class="col-sm-6">I Clamping: </label>
+                <input class="col-sm-4" id="velMaxI" type="number" step="1">
+              </div>
 
               <div class="row">
                 <label class="col-sm-8">D Gain: </label>
                 <input class="col-sm-4" id="velDGain" type="number" step="0.0001">
+              </div>
+              <br>
+              <div class="row">
+                <label class="col-sm-8">MAX_SPEED (m/s): </label>
+                <input class="col-sm-4" id="maxSpeed" type="number" step="0.1">
               </div>
 
               <button type="submit">Submit</button>
@@ -96,12 +111,20 @@
                 <label class="col-sm-8">I Gain: </label>
                 <input class="col-sm-4" id="attIGain" type="number" step="0.0001" disabled>
               </div>
-
+              <div class="row">
+                <div class="col-sm-2"></div>
+                <label class="col-sm-6">I Clamping: </label>
+                <input class="col-sm-4" id="attMaxI" type="number" step="1">
+              </div>
               <div class="row">
                 <label class="col-sm-8">D Gain: </label>
                 <input class="col-sm-4" id="attDGain" type="number" step="0.0001" disabled>
               </div>
-
+              <br>
+              <div class="row">
+                <label class="col-sm-8">MAX_ANGLE (deg): </label>
+                <input class="col-sm-4" id="maxAngle" type="number" step="0.1">
+              </div>
               <button type="submit">Submit</button>
           </form>
         </div>
@@ -120,7 +143,11 @@
                 <label class="col-sm-8">I Gain: </label>
                 <input class="col-sm-4" id="rateIGain" type="number" step="0.0001">
               </div>
-
+              <div class="row">
+                <div class="col-sm-2"></div>
+                <label class="col-sm-6">I Clamping: </label>
+                <input class="col-sm-4" id="rateMaxI" type="number" step="1">
+              </div>
               <div class="row">
                 <label class="col-sm-8">D Gain: </label>
                 <input class="col-sm-4" id="rateDGain" type="number" step="0.0001">
@@ -216,7 +243,7 @@
               <input class="col-sm-4" id="inertiaDist" type="number" step="0.01">
             </div>
             <div class="row">
-              <label class="col-sm-8">Motor Strength (N/RPM)</label>
+              <label class="col-sm-8">Motor Strength (mN/RPM)</label>
               <input class="col-sm-4" id="motStrength" type="number" step="0.001">
             </div>
             <button type="submit">Submit</button>
@@ -230,12 +257,15 @@
   </div>
   <div class="container">
     <div class="row">
-      <div class="col-sm-9">
+      <div class="col-sm-3">
         <h5 id="stateOmega"></h5>
         <h5 id="stateTheta"></h5>
         <h5 id="stateAccel"></h5>
         <h5 id="stateVel"></h5>
         <h5 id="statePos"></h5>
+      </div>
+      <div class="col-sm-6">
+        <h3>Graph Coming Soon</h3>
       </div>
       <div class="col-sm-3">
         <!-- <canvas id="canvas" width="500" height="500" style="background : black;"></canvas> -->

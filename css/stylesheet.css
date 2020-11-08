@@ -1,11 +1,12 @@
 h3 {
     text-align: center;
 }
-.sim-container {
-    margin: auto;
+.container {
+    /* margin: auto; */
     /* border: 3px solid green; */
-    padding: 10px;
+    /* padding: 10px; */
     /* float: center; */
+    font-size: small;
 }
 canvas {
     width : 100%;
@@ -19,3 +20,4 @@ canvas {
 input[type="number"] {
     font-size: small;
 }
+.tab { margin-left: 40px; }
