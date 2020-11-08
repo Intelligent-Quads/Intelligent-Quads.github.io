@@ -13,15 +13,20 @@ console.log(csv.width)
 
 var rateGains = { p: 60, i: 1, d: 1 };
 var attGains = { p: 5, i: 0, d: 0 };
-var velGains = { p: 0.1, i: 0, d: 0 };
-var posGains = { p: 0, i: 0, d: 0 };
+var velGains = { p: 1, i: 0, d: 0 };
+var posGains = { p: 1, i: 0, d: 0 };
 
-var angle_param = 45;
+var angle_param = 45; // deg
+var speed_param = 5; // m/s
 
 var timeStep = 10; //ms
 disturbance = {
-    stepLength: 0,
-    stepAmp: 0
+    stepLength: 0, // ms
+    stepAmp: 0 // N-m
+}
+disturbanceIC = {
+    stepLength: 100, // ms
+    stepAmp: 20 // N-m
 }
 
 desired = {
@@ -44,12 +49,12 @@ motor = {
     minRPM: 0,
     maxRPM: 5000,
     power2rpm: 4,
-    rpm2force: 2
+    rpm2force: .0001
 }
 
 drone = {
-    mass: 10, //kg 
-    inertia: 5, // kg-m^2
+    mass: 2, //kg 
+    inertia: .001, // kg-m^2
     armLength: 1, //m
     motorStrength: 3, //N
     hoverRPM: 200
@@ -78,6 +83,7 @@ rateError = {
 function updateDisplay() {
     document.getElementById("stateOmega").innerHTML = "Omega (deg/s): " + droneState.omega.toFixed(2).toString();
     document.getElementById("stateTheta").innerHTML = " Theta (deg): " + droneState.theta.toFixed(2).toString();
+    document.getElementById("stateAccel").innerHTML = " Acceleration (deg): " + droneState.acceleration.toFixed(2).toString();
     document.getElementById("stateVel").innerHTML = " Velocity (m/s): " + droneState.velocity.toFixed(2).toString();
     document.getElementById("statePos").innerHTML = " Position (m): " + droneState.position.toFixed(2).toString();
 }
@@ -114,6 +120,7 @@ function attitudeLoop() {
     else
         desired.desiredAtt = desired.desiredAtt;
 
+    console.log("desired att", desired.desiredAtt)
     // apply angle control loop in quickest direction and handle discontinuity
     currentError = desired.desiredAtt - droneState.theta;
     if (currentError > 180)
@@ -135,20 +142,40 @@ function attitudeLoop() {
     return output;
 }
 function velocityLoop() {
+    // apply angle limits
+    if (desired.desiredVel > speed_param)
+        desired.desiredVel = speed_param;
+    else if (desired.desiredVel < -speed_param)
+        desired.desiredVel = -speed_param;
+    else
+        desired.desiredVel = desired.desiredVel;
+
     currentError = desired.desiredVel - droneState.velocity;
     velError.dErr = (currentError - velError.pErr) / (timeStep / 1000);
     velError.pErr = currentError;
     velError.iErr = clamping(100, currentError + velError.iErr);
 
     output = velGains.p * velError.pErr + velGains.i * velError.iErr + velGains.d * velError.dErr;
-    console.log("vel loop", output)
+    // console.log("vel loop", output)
     desired.desiredAtt = output;
     output = attitudeLoop();
-    output = rateLoop();
     // console.log("rate loop", output)
     return output;
 
 }
+function positionLoop() {
+    currentError = desired.desiredPos - droneState.position;
+    posError.dErr = (currentError - posError.pErr) / (timeStep / 1000);
+    posError.pErr = currentError;
+    posError.iErr = clamping(100, currentError + posError.iErr);
+
+    output = posGains.p * posError.pErr + posGains.i * posError.iErr + posGains.d * posError.dErr;
+    console.log("pos loop", output)
+    desired.desiredVel = output;
+    output = velocityLoop();
+    return output;
+}
+
 function inRange(min, max, value) {
     if (value > max) {
         output = max;
@@ -163,20 +190,25 @@ function inRange(min, max, value) {
 
 function physics() {
     // calc control loops 
-    if (document.getElementById("velLoopChBx").checked) {
-        controlOutput = velocityLoop();
+    if (document.getElementById("posLoopChBx").checked) {
+        controlOutput = positionLoop();
     } else {
-        if (document.getElementById("attLoopChBx").checked) {
-            controlOutput = attitudeLoop();
+        if (document.getElementById("velLoopChBx").checked) {
+            controlOutput = velocityLoop();
         } else {
-            if (document.getElementById("rateLoopChBx").checked) {
-                controlOutput = rateLoop()
+            if (document.getElementById("attLoopChBx").checked) {
+                controlOutput = attitudeLoop();
             } else {
-                console.log("no control loop active")
-                controlOutput = 0;
+                if (document.getElementById("rateLoopChBx").checked) {
+                    controlOutput = rateLoop()
+                } else {
+                    console.log("no control loop active")
+                    controlOutput = 0;
+                }
             }
         }
     }
+
 
     // console.log("control output", controlOutput)
 
@@ -186,17 +218,22 @@ function physics() {
     var motorForce = motorForce1 + motorForce2;
     var motorTorque = motorForce2 * drone.armLength - motorForce1 * drone.armLength;
 
+    var rho = 101;
+    // var dargForce = .5 * rho * (droneState.velocity ^ 2) * 1.1 * 1;
+    var dargForce = 0;
+
     droneState.alpha = (motorTorque + disturbance.stepAmp) / drone.inertia;
 
     droneState.omega = droneState.alpha * (timeStep / 1000) + droneState.omega;
 
     droneState.theta = (((droneState.omega * (timeStep / 1000) + droneState.theta) + 180) % 360) - 180;
 
-    droneState.alpha = motorForce * Math.sin(droneState.theta) / drone.mass;
+    droneState.acceleration = ((motorForce * Math.sin(droneState.theta * (Math.PI / 180)) - dargForce) / drone.mass) //- ((droneState.velocity ^ 2) / drone.mass);
 
-    droneState.velocity = droneState.alpha * (timeStep / 1000) + droneState.velocity
-    // droneState.acceleration =
-    // console.log(droneState.theta)
+    droneState.velocity = droneState.acceleration * (timeStep / 1000) + droneState.velocity;
+
+    droneState.position = droneState.velocity * (timeStep / 1000) + droneState.position;
+    console.log("motor force", motorForce);
 
 }
 
@@ -296,6 +333,7 @@ function updateGains() {
         posGains.d = parseFloat(document.getElementById("posDGain").value);
     }
 
+    console.log(posGains)
     console.log(rateGains)
     console.log(attGains)
     return false;
@@ -346,8 +384,7 @@ function updateDisturbance() {
         disturbance.stepAmp = 0;
         console.log(disturbance)
     }, disturbance.stepLength);
-    // 
-    // console.log(disturbance)  
+
     return false;
 }
 function updateDrone() {
@@ -434,29 +471,34 @@ function enablePos(enableDisable) {
 }
 
 function updateLoopsEnabled() {
-    if (document.getElementById("velLoopChBx").checked) {
+    if (document.getElementById("posLoopChBx").checked) {
         enableRate(true);
         enableAtt(true);
         enableVel(true);
+        enablePos(true);
     } else {
-        if (document.getElementById("attLoopChBx").checked) {
+        if (document.getElementById("velLoopChBx").checked) {
             enableRate(true);
             enableAtt(true);
+            enableVel(true);
         } else {
-            enableAtt(false);
-            if (document.getElementById("rateLoopChBx").checked) {
+            if (document.getElementById("attLoopChBx").checked) {
                 enableRate(true);
+                enableAtt(true);
             } else {
-                enableRate(false);
                 enableAtt(false);
-                disableDesiredInput();
-                // enableVel(false);
-                // enablePos(false);
+                if (document.getElementById("rateLoopChBx").checked) {
+                    enableRate(true);
+                } else {
+                    enableRate(false);
+                    enableAtt(false);
+                    disableDesiredInput();
+                    // enableVel(false);
+                    // enablePos(false);
+                }
             }
         }
     }
-
-
 }
 
 function initDefaults() {
@@ -472,8 +514,12 @@ function initDefaults() {
     document.getElementById("velIGain").value = velGains.i;
     document.getElementById("velDGain").value = velGains.d;
 
-    document.getElementById("stepAmp").value = 5000;
-    document.getElementById("stepLength").value = 20;
+    document.getElementById("posPGain").value = posGains.p;
+    document.getElementById("posIGain").value = posGains.i;
+    document.getElementById("posDGain").value = posGains.d;
+
+    document.getElementById("stepAmp").value = disturbanceIC.stepLength;
+    document.getElementById("stepLength").value = disturbanceIC.stepAmp;
 
     document.getElementById("desiredRate").value = desired.desiredRate;
     document.getElementById("desiredAtt").value = desired.desiredAtt;
