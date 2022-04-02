@@ -19,7 +19,8 @@ var posGains = { p: 1, i: 0, iClamp: 100, d: 0 };
 var angle_param = 45; // deg
 var speed_param = 5; // m/s
 
-var timeStep = 10; //ms
+var timeStep = 20; //ms
+var cnt = 0;
 disturbance = {
     stepLength: 0, // ms
     stepAmp: 0 // N-m
@@ -249,10 +250,73 @@ function drawDrone(ctx, img, x, y, angle) {
     ctx.rotate(-(Math.PI / 180) * angle);
     ctx.translate(-x, -y);
 }
+
+function getData() {
+    return Math.random();
+}
+
+
+
+function plot() {
+
+    var desiredloop = {
+        y: [getData()],
+        type: 'line',
+        'name': 'desired'
+    };
+    var feedbackloop = {
+        y: [getData()],
+        type: 'line',
+        'name': 'feedback'
+    };
+    var layout = {
+        // title: 'Sales Growth',
+        xaxis: {
+            title: 'time',
+            showgrid: false,
+            zeroline: false
+        },
+        yaxis: {
+            title: 'deg/s',
+            showline: false,
+            range: [600, -600]
+
+        },
+        margin: {
+            l: 50,
+            r: 20,
+            t: 20,
+            b: 50,
+            pad: 0
+        },
+    };
+    data = [desiredloop, feedbackloop]
+    if (cnt == 0) {
+        Plotly.newPlot('plotdiv', data, layout);
+    }
+
+    Plotly.extendTraces('plotdiv', { y: [[desired.desiredRate], [droneState.omega]] }, [0, 1], 300)
+    // Plotly.extendTraces('plotdiv', { y: [[getData()], [getData()]] }, [0, 1], 10);
+    cnt++;
+    // if (cnt > 50) {
+    //     Plotly.relayout('plotdiv', {
+    //         xaxis: {
+    //             range: [cnt - 50, cnt]
+    //         }
+    //     });
+    // }
+
+
+
+
+
+}
+
 function animate(image) {
     canvasWidth = csv.width;
     canvasHeight = csv.height;
     physics();
+    plot();
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawDrone(ctx, image, canvasHeight / 2, canvasWidth / 2, droneState.theta);
     updateDisplay();
