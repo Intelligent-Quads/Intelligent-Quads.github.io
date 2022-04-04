@@ -257,18 +257,33 @@
   </div>
   <div class="container">
     <div class="row">
-      <div class="col-sm-3">
-        <h5 id="stateOmega"></h5>
-        <h5 id="stateTheta"></h5>
-        <h5 id="stateAccel"></h5>
-        <h5 id="stateVel"></h5>
-        <h5 id="statePos"></h5>
+      <div class="col-sm-2">
+        <h7 id="stateOmega"></h7>
+        <h7 id="stateTheta"></h7>
+        <h7 id="stateAccel"></h7>
+        <h7 id="stateVel"></h7>
+        <h7 id="statePos"></h7>
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="rateLoopPltChBx" onclick="plotRateLoop()">
+          <label class="custom-control-label" for="rateLoopPltChBx">Rate Loop Tracking</label>
+        </div>
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="attLoopPltChBx" onclick="plotAttitudeLoop()">
+          <label class="custom-control-label" for="attLoopPltChBx">Attitude Loop Tracking</label>
+        </div>
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="velLoopPltChBx" onclick="plotVelocityLoop()">
+          <label class="custom-control-label" for="velLoopPltChBx">Velocity Loop Tracking</label>
+        </div>
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="posLoopPltChBx" onclick="plotPositionLoop()">
+          <label class="custom-control-label" for="posLoopPltChBx">Position Loop Tracking</label>
+        </div>
       </div>
-      <div class="col-sm-6">
+      <div class="col-sm-7">
         <div id="plotdiv" style="width:600px;height:250px;"></div>
       </div>
       <div class="col-sm-3">
-        <!-- <canvas id="canvas" width="500" height="500" style="background : black;"></canvas> -->
         <canvas id="canvas" height="300" style="background : black;"></canvas>
       </div>
 

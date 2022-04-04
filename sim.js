@@ -21,6 +21,13 @@ var speed_param = 5; // m/s
 
 var timeStep = 20; //ms
 var cnt = 0;
+
+var pltRateTracking = false;
+var pltAttTracking = false;
+var pltVelTracking = false;
+var pltPosTracking = false;
+
+
 disturbance = {
     stepLength: 0, // ms
     stepAmp: 0 // N-m
@@ -296,15 +303,7 @@ function plot() {
     }
 
     Plotly.extendTraces('plotdiv', { y: [[desired.desiredRate], [droneState.omega]] }, [0, 1], 300)
-    // Plotly.extendTraces('plotdiv', { y: [[getData()], [getData()]] }, [0, 1], 10);
     cnt++;
-    // if (cnt > 50) {
-    //     Plotly.relayout('plotdiv', {
-    //         xaxis: {
-    //             range: [cnt - 50, cnt]
-    //         }
-    //     });
-    // }
 
 
 
@@ -597,7 +596,47 @@ function updateLoopsEnabled() {
         }
     }
 }
+function plotRateLoop() {
+    var desiredloop = {
+        y: [getData()],
+        type: 'line',
+        'name': 'desired'
+    };
+    var feedbackloop = {
+        y: [getData()],
+        type: 'line',
+        'name': 'feedback'
+    };
+    var layout = {
+        // title: 'Sales Growth',
+        xaxis: {
+            title: 'time',
+            showgrid: false,
+            zeroline: false
+        },
+        yaxis: {
+            title: 'deg/s',
+            showline: false,
+            range: [600, -600]
 
+        },
+        margin: {
+            l: 50,
+            r: 20,
+            t: 20,
+            b: 50,
+            pad: 0
+        },
+    };
+    if (document.getElementById("rateLoopPltChBx").checked) {
+        data = [desiredloop, feedbackloop]
+        if (cnt == 0) {
+            Plotly.newPlot('plotdiv', data, layout);
+        }
+        cnt++;
+        Plotly.extendTraces('plotdiv', { y: [[desired.desiredRate], [droneState.omega]] }, [0, 1], 300)
+    }
+}
 function initDefaults() {
     document.getElementById("ratePGain").value = rateGains.p;
     document.getElementById("rateIGain").value = rateGains.i;
